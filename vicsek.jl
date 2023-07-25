@@ -13,12 +13,15 @@ function random_angle(rng)
     return -π .+ rand(rng, SVector{2}) .* (2.0 * π)
 end
 
-function neighbors(particles, position, cutoff)
+function neighbors(particles, position, cutoff, boxl)
     new_neighbor = []
 
     for (i, p) in enumerate(particles)
-        dist = norm(p .- position)
-        if dist < cutoff
+        dist = p .- position
+        # Periodic boundary conditions
+        dist = @. dist - boxl * ceil(dist / boxl)
+        real_dist = norm(dist)
+        if real_dist < cutoff
             new_neighbor = append!(new_neighbor, i)
         end
     end
@@ -70,13 +73,27 @@ function main()
 
     while init_time < final_time
         for idx in 1:n_particles
-            neighbor_list = neighbors(position, position[idx], cutoff)
+            # Obtain the indices that are neighbors to the current particle
+            neighbor_list = neighbors(position, position[idx], cutoff, box_length)
+
+            # Compute the average angle based on the neighbors
             avg_θ = compute_average(neighbor_list, angles)
+
+            # Compute the noise vector based on the average angle
             noise = eta .* random_angle(rng)
             noise_vector = avg_θ .+ noise
-            for (idx, p) in enumerate(position)
-                position[idx] = @. p + τ * noise_vector
+
+            # Update the position according to the Vicsek model
+            for (ijx, p) in enumerate(position)
+                position[ijx] = @. p + τ * noise_vector
             end
+
+            # Enforce periodic boundary conditions
+            for (ijx, p) in enumerate(position)
+                position[ijx] = @. p - box_length * ceil(p / box_length)
+            end
+
+            # Update the angles with the new vectors
             angles[idx] = atan(noise_vector[1], noise_vector[2])
         end
 

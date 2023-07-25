@@ -1,6 +1,7 @@
 using Random
 using StaticArrays
 using LinearAlgebra
+using DelimitedFiles
 
 function initialize_simulation(npart, rng, boxl)
     positions = [-boxl .+ rand(rng, SVector{2}) .* (2.0 * boxl) for _ in 1:npart]
@@ -54,22 +55,30 @@ function compute_average(neighs, angles)
     return avg_vector ./ length(neighs)
 end
 
+
+
 function main()
     rng = Random.Xoshiro(123)
-    n_particles = 10
+    n_particles = 1_000
     density = 1.0
     # Assuming 2D simulation
     box_length = √(n_particles / density)
     @show box_length
-    eta = 0.45
+    eta = 1.0
     cutoff = 2.0
-    τ = 0.01
+    τ = 0.001
     init_time = 0.0
-    final_time = 10.0
+    final_time = 5.0
+    count = 0
+
+    # Open up a file for saving the trajectory
+    file = open("trajectory.xyz", "w")
+    # Write the headers
+    println(file, n_particles)
+    println(file, "")
 
     # Create the positions
     (position, angles) = initialize_simulation(n_particles, rng, box_length)
-    display(position)
 
     while init_time < final_time
         for idx in 1:n_particles
@@ -85,7 +94,7 @@ function main()
 
             # Update the position according to the Vicsek model
             for (ijx, p) in enumerate(position)
-                position[ijx] = @. p + τ * noise_vector
+                position[ijx] = @. p + (τ * noise_vector)
             end
 
             # Enforce periodic boundary conditions
@@ -95,13 +104,22 @@ function main()
 
             # Update the angles with the new vectors
             angles[idx] = atan(noise_vector[1], noise_vector[2])
+            current_direction = angle_to_vector(angles[idx])
+
+            # Write to file the positions and the velocities
+            line_to_write = [position[idx]' current_direction']
+            writedlm(file, line_to_write)
         end
 
         init_time += τ
+        count += 1
+
+        # Write the headers
+        println(file, n_particles)
+        println(file, "Frame $count")
     end
 
-    display(position)
-
+    close(file)
 
     return nothing
 end

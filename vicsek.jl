@@ -9,6 +9,10 @@ function initialize_simulation(npart, rng, boxl)
     return (positions, angles)
 end
 
+function random_angle(rng)
+    return -π .+ rand(rng, SVector{2}) .* (2.0 * π)
+end
+
 function neighbors(particles, position, cutoff)
     new_neighbor = []
 
@@ -30,10 +34,7 @@ function unit_vector(v1, v2)
 end
 
 function angle_to_vector(θ)
-    x = cos(θ)
-    y = sin(θ)
-
-    v1 = @SVector [x, y]
+    v1 = @SVector [cos(θ), sin(θ)]
     v2 = @SVector zeros(2)
 
     return unit_vector(v1, v2)
@@ -56,16 +57,34 @@ function main()
     density = 1.0
     # Assuming 2D simulation
     box_length = √(n_particles / density)
-    eta = 0.1
+    @show box_length
+    eta = 0.45
     cutoff = 2.0
     τ = 0.01
+    init_time = 0.0
+    final_time = 10.0
 
     # Create the positions
     (position, angles) = initialize_simulation(n_particles, rng, box_length)
+    display(position)
 
-    neighbor_list = neighbors(position, position[1], cutoff)
-    avg_θ = compute_average(neighbor_list, angles)
-    @show avg_θ
+    while init_time < final_time
+        for idx in 1:n_particles
+            neighbor_list = neighbors(position, position[idx], cutoff)
+            avg_θ = compute_average(neighbor_list, angles)
+            noise = eta .* random_angle(rng)
+            noise_vector = avg_θ .+ noise
+            for (idx, p) in enumerate(position)
+                position[idx] = @. p + τ * noise_vector
+            end
+            angles[idx] = atan(noise_vector[1], noise_vector[2])
+        end
+
+        init_time += τ
+    end
+
+    display(position)
+
 
     return nothing
 end

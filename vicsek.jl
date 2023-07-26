@@ -2,7 +2,7 @@ using Random
 using StaticArrays
 using LinearAlgebra
 using DelimitedFiles
-# using CellListMap
+using CellListMap
 
 function initialize_simulation(npart, rng, boxl)
     positions = [-boxl .+ rand(rng, SVector{2}) .* (2.0 * boxl) for _ in 1:npart]
@@ -66,7 +66,7 @@ function main()
     eta = 0.1
     cutoff = 2.5
     τ = 0.01
-    time_steps = 100
+    time_steps = 2
     count = 0
 
     # Open up a file for saving the trajectory
@@ -79,13 +79,13 @@ function main()
     (position, angles) = initialize_simulation(n_particles, rng, box_length)
 
     for t in 1:time_steps
+        all_neighbors = neighborlist(
+            position, cutoff; unitcell=[box_length, box_length], parallel=false
+        )
         for idx in 1:n_particles
             # Obtain the indices that are neighbors to the current particle
-            neighbor_list = neighbors(position, position[idx], cutoff, box_length)
-
-            # neighbor_list = cell_list_neighbor_search(
-            #     position, (box_length, box_length), cutoff
-            # )
+            list_idx = map(x -> x[1] == idx, all_neighbors)
+            neighbor_list = map(x -> x[2], all_neighbors[list_idx])
 
             # Compute the average angle based on the neighbors
             avg_θ = compute_average(neighbor_list, angles)

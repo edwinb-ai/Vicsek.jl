@@ -2,62 +2,7 @@ using Random
 using StaticArrays
 using LinearAlgebra
 using DelimitedFiles
-
-function cell_list_neighbor_search_2D(
-    particles, box_size::Tuple{Float64,Float64}, cutoff_radius::Float64
-)
-    n_particles = length(particles)
-    n_cells_x = ceil(Int, box_size[1] / cutoff_radius)
-    n_cells_y = ceil(Int, box_size[2] / cutoff_radius)
-
-    # Create a dictionary to store particles in each cell
-    cells_dict = Dict{Tuple{Int,Int},Vector{Int}}()
-
-    # Function to get the cell indices for a given position
-    get_cell_indices(x, y) = ((x - 1) ÷ cutoff_radius, (y - 1) ÷ cutoff_radius)
-
-    # Populate cells_dict with particle indices in each cell
-    for (index, particle) in enumerate(particles)
-        cell_indices = get_cell_indices(particle[1], particle[2])
-        cell_key = Tuple(cell_indices)
-        if haskey(cells_dict, cell_key)
-            push!(cells_dict[cell_key], index)
-        else
-            cells_dict[cell_key] = [index]
-        end
-    end
-
-    # Function to get neighboring cells for a given cell
-    function neighboring_cells(cell_indices)
-        return [
-            ((cell_indices[1] + dx) % n_cells_x, (cell_indices[2] + dy) % n_cells_y) for
-            dx in -1:1, dy in -1:1
-        ]
-    end
-
-    # Function to get neighboring particle indices for a given particle
-    function get_neighbors(index)
-        particle = particles[index]
-        cell_indices = get_cell_indices(particle[1], particle[2])
-        neighboring_cell_indices = neighboring_cells(cell_indices)
-        neighbors = Set{Int}()
-        for cell_idx in neighboring_cell_indices
-            cell_key = Tuple(cell_idx)
-            if haskey(cells_dict, cell_key)
-                append!(neighbors, cells_dict[cell_key])
-            end
-        end
-        return neighbors
-    end
-
-    # Perform neighbor search for each particle
-    neighbor_list = Vector{Set{Int}}(undef, n_particles)
-    for i in 1:n_particles
-        neighbor_list[i] = get_neighbors(i)
-    end
-
-    return neighbor_list
-end
+# using CellListMap
 
 function initialize_simulation(npart, rng, boxl)
     positions = [-boxl .+ rand(rng, SVector{2}) .* (2.0 * boxl) for _ in 1:npart]
@@ -113,7 +58,7 @@ end
 
 function main()
     rng = Random.Xoshiro(124)
-    n_particles = 500
+    n_particles = 10_000
     density = 2.0
     # Assuming 2D simulation
     box_length = √(n_particles / density)
@@ -121,7 +66,7 @@ function main()
     eta = 0.1
     cutoff = 2.5
     τ = 0.01
-    time_steps = 1e3
+    time_steps = 100
     count = 0
 
     # Open up a file for saving the trajectory
@@ -137,6 +82,10 @@ function main()
         for idx in 1:n_particles
             # Obtain the indices that are neighbors to the current particle
             neighbor_list = neighbors(position, position[idx], cutoff, box_length)
+
+            # neighbor_list = cell_list_neighbor_search(
+            #     position, (box_length, box_length), cutoff
+            # )
 
             # Compute the average angle based on the neighbors
             avg_θ = compute_average(neighbor_list, angles)

@@ -1,3 +1,11 @@
 # The manifest file is always created from the Project.toml file
 Manifest.toml
+
+# Ignore data files that can be created using the code
 *.xyz
+
+# Ignore files from the cluster
+*.o*
+*.po*
+*.qsub
+*.slurm

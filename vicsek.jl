@@ -58,17 +58,16 @@ end
 
 
 function main()
-    rng = Random.Xoshiro(123)
-    n_particles = 1_000
-    density = 1.0
+    rng = Random.Xoshiro(124)
+    n_particles = 500
+    density = 2.0
     # Assuming 2D simulation
     box_length = √(n_particles / density)
     @show box_length
-    eta = 1.0
-    cutoff = 2.0
-    τ = 0.001
-    init_time = 0.0
-    final_time = 5.0
+    eta = 0.1
+    cutoff = 2.5
+    τ = 0.01
+    time_steps = 1e3
     count = 0
 
     # Open up a file for saving the trajectory
@@ -80,7 +79,7 @@ function main()
     # Create the positions
     (position, angles) = initialize_simulation(n_particles, rng, box_length)
 
-    while init_time < final_time
+    for t in 1:time_steps
         for idx in 1:n_particles
             # Obtain the indices that are neighbors to the current particle
             neighbor_list = neighbors(position, position[idx], cutoff, box_length)
@@ -103,20 +102,21 @@ function main()
             end
 
             # Update the angles with the new vectors
-            angles[idx] = atan(noise_vector[1], noise_vector[2])
+            angles[idx] = atan(noise_vector...)
             current_direction = angle_to_vector(angles[idx])
 
-            # Write to file the positions and the velocities
-            line_to_write = [position[idx]' current_direction']
-            writedlm(file, line_to_write)
+            if mod(t, 100) == 0
+                # Write to file the positions and the velocities
+                line_to_write = [position[idx]' current_direction']
+                writedlm(file, line_to_write)
+            end
         end
 
-        init_time += τ
-        count += 1
-
-        # Write the headers
-        println(file, n_particles)
-        println(file, "Frame $count")
+        # Write every certain number of time steps
+        if mod(t, 100) == 0
+            println(file, n_particles)
+            println(file, "Frame $count")
+        end
     end
 
     close(file)

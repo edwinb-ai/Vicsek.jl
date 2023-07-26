@@ -57,7 +57,7 @@ function compute_average(neighs, angles)
 end
 
 function main()
-    rng = Random.Xoshiro(124)
+    rng = Random.Xoshiro()
     n_particles = 10_000
     density = 2.0
     # Assuming 2D simulation
@@ -75,10 +75,6 @@ function main()
     (position, angles) = initialize_simulation(n_particles, rng, box_length)
 
     for t in 1:time_steps
-        # Write the headers for the frames in the trajectory file
-        println(file, n_particles)
-        println(file, "Frame $t")
-
         all_neighbors = neighborlist(
             position, cutoff; unitcell=[box_length, box_length], parallel=false
         )
@@ -113,6 +109,9 @@ function main()
 
         # Write every certain number of time steps
         if mod(t, 100) == 0
+            # Write the headers for the frames in the trajectory file
+            println(file, n_particles)
+            println(file, "Frame $t")
             current_directions = angle_to_vector.(angles)
             write_directions = reduce(hcat, current_directions)
             write_positions = reduce(hcat, position)

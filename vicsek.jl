@@ -66,19 +66,19 @@ function main()
     eta = 0.1
     cutoff = 2.5
     τ = 0.01
-    time_steps = 2
-    count = 0
+    time_steps = 1e4
 
     # Open up a file for saving the trajectory
     file = open("trajectory.xyz", "w")
-    # Write the headers
-    println(file, n_particles)
-    println(file, "")
 
     # Create the positions
     (position, angles) = initialize_simulation(n_particles, rng, box_length)
 
     for t in 1:time_steps
+        # Write the headers for the frames in the trajectory file
+        println(file, n_particles)
+        println(file, "Frame $t")
+
         all_neighbors = neighborlist(
             position, cutoff; unitcell=[box_length, box_length], parallel=false
         )
@@ -86,6 +86,9 @@ function main()
             # Obtain the indices that are neighbors to the current particle
             list_idx = map(x -> x[1] == idx, all_neighbors)
             neighbor_list = map(x -> x[2], all_neighbors[list_idx])
+            if isempty(neighbor_list)
+                continue
+            end
 
             # Compute the average angle based on the neighbors
             avg_θ = compute_average(neighbor_list, angles)
@@ -106,19 +109,14 @@ function main()
 
             # Update the angles with the new vectors
             angles[idx] = atan(noise_vector...)
-            current_direction = angle_to_vector(angles[idx])
-
-            if mod(t, 100) == 0
-                # Write to file the positions and the velocities
-                line_to_write = [position[idx]' current_direction']
-                writedlm(file, line_to_write)
-            end
         end
 
         # Write every certain number of time steps
         if mod(t, 100) == 0
-            println(file, n_particles)
-            println(file, "Frame $count")
+            current_directions = angle_to_vector.(angles)
+            write_directions = reduce(hcat, current_directions)
+            write_positions = reduce(hcat, position)
+            writedlm(file, [write_positions' write_directions'])
         end
     end
 

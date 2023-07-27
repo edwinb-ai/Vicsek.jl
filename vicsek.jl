@@ -56,14 +56,14 @@ function compute_average(neighs, angles)
     return avg_vector ./ length(neighs)
 end
 
-function simulate()
+function main()
     rng = Random.Xoshiro()
     n_particles = 2500
     density = 2.0
     # Assuming 2D simulation
     box_length = √(n_particles / density)
     @show box_length
-    eta = 0.42
+    eta = 0.3
     cutoff = 2.5
     τ = 0.05
     time_steps = 1e5
@@ -121,10 +121,6 @@ function simulate()
 
     close(file)
 
-    return nothing
-end
-
-function main()
     return nothing
 end
 

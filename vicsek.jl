@@ -56,7 +56,7 @@ function compute_average(neighs, angles)
     return avg_vector ./ length(neighs)
 end
 
-function main()
+function simulate()
     rng = Random.Xoshiro()
     n_particles = 2500
     density = 2.0
@@ -121,6 +121,10 @@ function main()
 
     close(file)
 
+    return nothing
+end
+
+function main()
     return nothing
 end
 

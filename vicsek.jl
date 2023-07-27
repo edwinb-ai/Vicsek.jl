@@ -58,15 +58,15 @@ end
 
 function main()
     rng = Random.Xoshiro()
-    n_particles = 10_000
+    n_particles = 2500
     density = 2.0
     # Assuming 2D simulation
     box_length = √(n_particles / density)
     @show box_length
-    eta = 0.1
+    eta = 0.42
     cutoff = 2.5
-    τ = 0.01
-    time_steps = 1e4
+    τ = 0.05
+    time_steps = 1e5
 
     # Open up a file for saving the trajectory
     file = open("trajectory.xyz", "w")

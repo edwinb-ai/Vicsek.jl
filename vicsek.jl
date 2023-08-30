@@ -63,21 +63,23 @@ function main()
     # Assuming 2D simulation
     box_length = √(n_particles / density)
     @show box_length
-    eta = 0.3
+    eta = 0.55
     cutoff = 2.5
     τ = 0.05
-    time_steps = 1e5
+    time_steps = 10000
 
     # Open up a file for saving the trajectory
     file = open("trajectory.xyz", "w")
 
     # Create the positions
     (position, angles) = initialize_simulation(n_particles, rng, box_length)
+    system = InPlaceNeighborList(;
+        x=position, cutoff=cutoff, unitcell=[box_length, box_length], parallel=false
+    )
 
     for t in 1:time_steps
-        all_neighbors = neighborlist(
-            position, cutoff; unitcell=[box_length, box_length], parallel=false
-        )
+        # Compute the neighbor list
+        all_neighbors = neighborlist!(system)
         for idx in 1:n_particles
             # Obtain the indices that are neighbors to the current particle
             list_idx = map(x -> x[1] == idx, all_neighbors)
@@ -98,7 +100,6 @@ function main()
                 position[ijx] = @. p + (τ * noise_vector)
             end
 
-            # Enforce periodic boundary conditions
             for (ijx, p) in enumerate(position)
                 position[ijx] = @. p - box_length * ceil(p / box_length)
             end
@@ -106,6 +107,9 @@ function main()
             # Update the angles with the new vectors
             angles[idx] = atan(noise_vector...)
         end
+
+        # We should update the neighbor-list
+        update!(system, position)
 
         # Write every certain number of time steps
         if mod(t, 100) == 0

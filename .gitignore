@@ -9,3 +9,6 @@ Manifest.toml
 *.po*
 *.qsub
 *.slurm
+
+# Ignore editor files
+.vscode/

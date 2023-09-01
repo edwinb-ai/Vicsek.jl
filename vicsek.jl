@@ -15,22 +15,6 @@ function random_angle(rng)
     return -π .+ rand(rng, SVector{2}) .* (2.0 * π)
 end
 
-function neighbors(particles, position, cutoff, boxl)
-    new_neighbor = []
-
-    for (i, p) in enumerate(particles)
-        dist = p .- position
-        # Periodic boundary conditions
-        dist = @. dist - boxl * ceil(dist / boxl)
-        real_dist = norm(dist)
-        if real_dist < cutoff
-            new_neighbor = append!(new_neighbor, i)
-        end
-    end
-
-    return new_neighbor
-end
-
 function unit_vector(v1, v2)
     vector = v1 .- v2
     dist = norm(vector)
@@ -59,11 +43,11 @@ end
 function main()
     rng = Random.Xoshiro()
     n_particles = 2500
-    density = 2.0
+    density = 1.0
     # Assuming 2D simulation
     box_length = √(n_particles / density)
     @show box_length
-    eta = 0.55
+    eta = 0.3
     cutoff = 2.5
     τ = 0.05
     time_steps = 10000
